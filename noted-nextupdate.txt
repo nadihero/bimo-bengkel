@@ -1,0 +1,8 @@
+1. pelanggan bayar input tidak boleh lebih dari sisa pembayaran
+2. buat menu baru: Penjualan tanpa menimput plat (Buat menu baru di homepage)
+3. tambahkan fitur filter di halaman history
+4. tambahkan fitur tambah item (Persiapan jika ada lupa) di halaman history
+5. Mengirim Resi ke WA pelanggan
+6. Untuk penyebutan harga, gunakan voice yang simple misal ring 17 1 harga 500rb (tambah format harga setiap penyebutan angka harga)
+7. Data di update menjadi data realtime/ Pergantian data harian adalah jam 12 malam
+8. Pastikan semua fitur berjalan dengan baik dan tidak ada error
