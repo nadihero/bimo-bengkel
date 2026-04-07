@@ -109,42 +109,45 @@ export default function TransactionDetailClient({ transaction }: Props) {
 
   return (
     <div className="min-h-dvh bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-3">
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-24">
+        <div className="max-w-lg mx-auto space-y-4">
+          {/* Back + Info Card */}
+          <div className="flex items-center gap-3 mb-3">
             <Link
               href="/"
-              className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-900">{transaction.vehicle.plate_number}</h1>
-              <p className="text-xs text-gray-400">{transaction.vehicle.customer.name}</p>
-            </div>
-            <Badge status={transaction.status} />
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="w-10 h-10 rounded-full border-2 border-red-200 flex items-center justify-center hover:bg-red-50 text-red-500"
+              className="flex items-center gap-2 text-gray-500 hover:text-[#E10600] transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-            </button>
+              <span className="text-md font-medium">Kembali</span>
+            </Link>
           </div>
-          {transaction.vehicle.brand && (
-            <p className="text-sm text-gray-400 mt-2">
-              {transaction.vehicle.brand} {transaction.vehicle.model}
-            </p>
-          )}
-        </div>
-      </header>
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
 
-      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
-        <div className="max-w-lg mx-auto space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{transaction.vehicle.plate_number}</h1>
+                <p className="text-sm text-gray-500">{transaction.vehicle.customer.name}</p>
+                {transaction.vehicle.brand && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {transaction.vehicle.brand} {transaction.vehicle.model}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge status={transaction.status} />
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-10 h-10 rounded-full border-2 border-red-200 flex items-center justify-center hover:bg-red-50 text-red-500"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
           {/* Transaction Info Card */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
             <p className="text-sm text-gray-400 mb-2">{formatDate(transaction.transaction_date)}</p>

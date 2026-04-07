@@ -100,29 +100,19 @@ function NewTransactionContent() {
 
   return (
     <div className="min-h-dvh bg-gray-50 flex flex-col">
-      {/* Header - Navigation Only */}
-      <header className="bg-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Transaksi Baru</h1>
-              <p className="text-xs text-gray-400">Service / Penjualan</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-24">
         <div className="max-w-lg mx-auto">
+          {/* Back button */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-500 hover:text-[#E10600] transition-colors mb-4"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">Kembali</span>
+          </Link>
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Optional Plate Input */}
             <div className="bg-white rounded-2xl border border-gray-100 p-5">

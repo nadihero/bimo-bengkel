@@ -57,23 +57,8 @@ export default function LaporanPage() {
 
   return (
     <div className="min-h-dvh bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
-          <Link
-            href="/"
-            className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
-          >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="text-xl font-bold text-gray-900">Laporan</h1>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-24">
         <div className="max-w-lg mx-auto">
           {/* Period Selector */}
           <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -82,8 +67,8 @@ export default function LaporanPage() {
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={`px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${period === p
-                    ? 'bg-[#E10600] text-white'
-                    : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300'
+                  ? 'bg-[#E10600] text-white'
+                  : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300'
                   }`}
               >
                 {periodLabels[p]}
@@ -215,10 +200,10 @@ export default function LaporanPage() {
                           <div className="text-right">
                             <p className="font-semibold text-gray-900">{formatCurrency(tx.total)}</p>
                             <span className={`inline-block px-2 py-0.5 rounded-lg text-xs font-medium ${tx.status === 'paid'
-                                ? 'bg-green-100 text-green-600'
-                                : tx.status === 'dp'
-                                  ? 'bg-yellow-100 text-yellow-600'
-                                  : 'bg-red-100 text-red-600'
+                              ? 'bg-green-100 text-green-600'
+                              : tx.status === 'dp'
+                                ? 'bg-yellow-100 text-yellow-600'
+                                : 'bg-red-100 text-red-600'
                               }`}>
                               {tx.status === 'paid' ? 'Lunas' : tx.status === 'dp' ? 'DP' : 'Belum Bayar'}
                             </span>

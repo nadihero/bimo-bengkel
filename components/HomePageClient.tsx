@@ -25,47 +25,44 @@ export default function HomePageClient({ unpaidVehicles }: HomePageClientProps) 
 
   return (
     <div className="min-h-dvh bg-gray-50 flex flex-col">
-      {/* Search Header */}
-      <header className="bg-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
-          <div className="flex-1 relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder="Cari plat, nama, atau kendaraan..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-12 pr-10 rounded-full border-2 border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#E10600] focus:bg-white transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-          <Link
-            href="/transaction/new"
-            className="w-12 h-12 rounded-full bg-[#E10600] flex items-center justify-center text-white hover:bg-gray-700 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-gray-900/30"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </Link>
-        </div>
-      </header>
-
-      {/* Scrollable Content */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-24">
         <div className="max-w-lg mx-auto space-y-3">
+          {/* Search + Add Button */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Cari plat, nama, atau kendaraan..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-12 pl-12 pr-10 rounded-full border-2 border-gray-200 bg-white text-sm focus:outline-none focus:border-[#E10600] transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <Link
+              href="/transaction/new"
+              className="w-12 h-12 rounded-full bg-[#E10600] flex items-center justify-center text-white hover:bg-red-700 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-500/30"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </Link>
+          </div>
           {/* Search Results Info */}
           {searchQuery && (
             <p className="text-sm text-gray-500 mb-2">
@@ -117,8 +114,8 @@ export default function HomePageClient({ unpaidVehicles }: HomePageClientProps) 
                       </div>
                     </div>
                     <span className={`px-2 py-1 rounded-lg text-xs font-medium ${v.status === 'dp'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-red-100 text-red-700'
                       }`}>
                       {v.status === 'dp' ? 'DP' : 'Belum Lunas'}
                     </span>
