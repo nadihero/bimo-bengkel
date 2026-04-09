@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import TransactionItemsEditor from '@/components/TransactionItemsEditor';
 import { TransactionItemInput } from '@/lib/types';
-import { getVehicleByPlate } from '@/lib/actions/vehicle';
-import { createTransaction, createTransactionWithNewVehicle, createSaleTransaction } from '@/lib/actions/transaction';
+import { searchCustomers, CustomerSearchResult, getVehicleByPlate } from '@/lib/actions/vehicle';
+import { createTransaction, createTransactionWithNewVehicle } from '@/lib/actions/transaction';
 import { VehicleWithCustomer } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import BottomNav from '@/components/BottomNav';
@@ -16,18 +16,53 @@ function NewTransactionContent() {
   const searchParams = useSearchParams();
   const plateParam = searchParams.get('plate') || '';
 
+  // Plate number state
   const [plateNumber, setPlateNumber] = useState(plateParam);
   const [vehicle, setVehicle] = useState<VehicleWithCustomer | null>(null);
   const [isNewVehicle, setIsNewVehicle] = useState(false);
+  const [checkingPlate, setCheckingPlate] = useState(false);
+
+  // Search suggestions state
+  const [suggestions, setSuggestions] = useState<CustomerSearchResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searching, setSearching] = useState(false);
+
   const [items, setItems] = useState<TransactionItemInput[]>([]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Check plate on initial load
   useEffect(() => {
     if (plateParam) {
       checkVehicle(plateParam);
     }
   }, [plateParam]);
+
+  // Debounce search for suggestions
+  useEffect(() => {
+    if (!plateNumber.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    // If vehicle found, don't search
+    if (vehicle) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const results = await searchCustomers(plateNumber);
+      setSuggestions(results);
+      setShowSuggestions(results.length > 0);
+      setSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [plateNumber, vehicle]);
 
   const checkVehicle = async (plate: string) => {
     if (!plate.trim()) {
@@ -35,6 +70,7 @@ function NewTransactionContent() {
       setIsNewVehicle(false);
       return;
     }
+    setCheckingPlate(true);
     const v = await getVehicleByPlate(plate);
     if (v) {
       setVehicle(v);
@@ -43,24 +79,45 @@ function NewTransactionContent() {
       setVehicle(null);
       setIsNewVehicle(true);
     }
+    setCheckingPlate(false);
   };
 
   const handlePlateChange = (value: string) => {
     const normalized = value.toUpperCase();
     setPlateNumber(normalized);
-    if (!normalized.trim()) {
-      setVehicle(null);
-      setIsNewVehicle(false);
-    }
+    setVehicle(null);
+    setIsNewVehicle(false);
   };
 
   const handlePlateBlur = () => {
     if (plateNumber.trim()) {
       checkVehicle(plateNumber);
-    } else {
-      setVehicle(null);
-      setIsNewVehicle(false);
     }
+  };
+
+  const handleSelectCustomer = (customer: CustomerSearchResult) => {
+    if (customer.plate_number) {
+      setPlateNumber(customer.plate_number);
+      checkVehicle(customer.plate_number);
+    }
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const handleInputFocus = () => {
+    if (suggestions.length > 0 && !vehicle) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Delay to allow click on suggestion
+    setTimeout(() => {
+      setShowSuggestions(false);
+      if (plateNumber.trim() && !vehicle) {
+        checkVehicle(plateNumber);
+      }
+    }, 200);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,16 +134,12 @@ function NewTransactionContent() {
     try {
       let transactionId: string;
 
-      if (plateNumber.trim()) {
-        // Has plate - use vehicle flow
-        if (vehicle) {
-          transactionId = await createTransaction(vehicle.id, items, notes || undefined);
-        } else {
-          transactionId = await createTransactionWithNewVehicle(plateNumber, items, notes || undefined);
-        }
+      if (vehicle) {
+        // Existing vehicle
+        transactionId = await createTransaction(vehicle.id, items, notes || undefined);
       } else {
-        // No plate - use sale flow (generates GM-XXX code)
-        transactionId = await createSaleTransaction(items, undefined, notes || undefined);
+        // New vehicle (or generate ID-XXX if no plate)
+        transactionId = await createTransactionWithNewVehicle(plateNumber, items, notes || undefined);
       }
 
       router.push(`/transaction/${transactionId}`);
@@ -114,33 +167,99 @@ function NewTransactionContent() {
             <span className="text-sm font-medium">Kembali</span>
           </Link>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Optional Plate Input */}
+            {/* Plate Number Input with Autocomplete */}
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <label className="block text-xs text-gray-400 mb-2">Nomor Plat (Opsional)</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="PLAT"
-                  value={plateNumber}
-                  onChange={(e) => handlePlateChange(e.target.value)}
-                  onBlur={handlePlateBlur}
-                  className="w-50 h-10 px-3 text-xl font-bold text-center rounded-full border-2 border-gray-200 bg-white focus:outline-none focus:border-[#E10600]"
-                />
-                <div className="flex-1">
-                  {vehicle ? (
-                    <div>
-                      <p className="font-semibold text-gray-900">{vehicle.customer.name}</p>
-                      <p className="text-sm text-gray-400">{vehicle.brand} {vehicle.model}</p>
+              <label className="block text-xs text-gray-400 mb-2">Nomor Plat Kendaraan (Opsional)</label>
+              <div className="relative">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Ketik plat, nama, atau HP..."
+                    value={plateNumber}
+                    onChange={(e) => handlePlateChange(e.target.value)}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    className="w-full h-12 px-4 pr-10 rounded-full border-2 border-gray-200 bg-white text-gray-900 font-bold text-center focus:outline-none focus:border-[#E10600]"
+                  />
+                  {(searching || checkingPlate) && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <div className="w-5 h-5 border-2 border-gray-300 border-t-[#E10600] rounded-full animate-spin"></div>
                     </div>
-                  ) : isNewVehicle ? (
-                    <p className="text-sm text-yellow-600">Pelanggan baru</p>
-                  ) : plateNumber.trim() ? (
-                    <p className="text-sm text-gray-400">Memeriksa...</p>
-                  ) : (
-                    <p className="text-sm text-gray-400">Kosongkan untuk GM-XXX</p>
+                  )}
+                  {vehicle && !searching && !checkingPlate && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
                   )}
                 </div>
+
+                {/* Suggestions Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+                    {suggestions.map((customer, index) => (
+                      <button
+                        key={`${customer.id}-${index}`}
+                        type="button"
+                        onClick={() => handleSelectCustomer(customer)}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${customer.match_type === 'plate' ? 'bg-blue-500' :
+                          customer.match_type === 'phone' ? 'bg-green-500' : 'bg-[#E10600]'
+                          }`}>
+                          {customer.match_type === 'plate' ? (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                            </svg>
+                          ) : customer.match_type === 'phone' ? (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                          ) : (
+                            customer.name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{customer.name}</p>
+                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                            {customer.plate_number && (
+                              <span className={customer.match_type === 'plate' ? 'text-blue-600 font-medium' : ''}>
+                                {customer.plate_number}
+                              </span>
+                            )}
+                            {customer.plate_number && customer.phone && <span>•</span>}
+                            {customer.phone && (
+                              <span className={customer.match_type === 'phone' ? 'text-green-600 font-medium' : ''}>
+                                {customer.phone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Status indicator */}
+              {!showSuggestions && (
+                <div className="mt-2 text-sm">
+                  {plateNumber.trim() ? (
+                    vehicle ? (
+                      <div className="text-green-600">
+                        <p>✓ {vehicle.customer.name}</p>
+                        {vehicle.brand && <p className="text-gray-400">{vehicle.brand} {vehicle.model}</p>}
+                      </div>
+                    ) : isNewVehicle ? (
+                      <p className="text-yellow-600">Kendaraan baru akan didaftarkan</p>
+                    ) : null
+                  ) : (
+                    <p className="text-gray-400">Kosongkan untuk generate ID-XXX otomatis</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <TransactionItemsEditor items={items} onChange={setItems} />
@@ -197,7 +316,7 @@ function NewTransactionContent() {
                 </svg>
               </div>
               <p className="text-gray-500">Tambahkan item untuk mulai mencatat</p>
-              <p className="text-xs text-gray-400 mt-2">Isi plat jika service kendaraan, kosongkan untuk penjualan</p>
+              <p className="text-xs text-gray-400 mt-2">Isi nama pelanggan atau kosongkan</p>
             </div>
           )}
         </div>

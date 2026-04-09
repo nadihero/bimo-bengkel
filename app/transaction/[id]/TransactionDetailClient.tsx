@@ -114,7 +114,13 @@ export default function TransactionDetailClient({ transaction }: Props) {
           {/* Back + Info Card */}
           <div className="flex items-center gap-3 mb-3">
             <Link
-              href="/"
+              href={
+                transaction.vehicle.plate_number.match(/^GM-[0-9]+$/)
+                  ? "/penjualan"
+                  : transaction.vehicle.plate_number.match(/^ID-[0-9]+$/)
+                    ? "/history"
+                    : "/"
+              }
               className="flex items-center gap-2 text-gray-500 hover:text-[#E10600] transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,20 +175,37 @@ export default function TransactionDetailClient({ transaction }: Props) {
                         placeholder="Deskripsi"
                         className="w-full px-3 py-2 rounded-lg border-2 border-[#E10600] bg-white text-gray-900 text-sm focus:outline-none focus:border-[#E10600]"
                       />
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={editQty}
-                          onChange={(e) => setEditQty(e.target.value)}
-                          placeholder="Qty"
-                          className="w-20 px-3 py-2 rounded-lg border-2 border-[#E10600] bg-white text-gray-900 text-sm focus:outline-none focus:border-[#E10600]"
-                        />
+                      <div className="flex gap-2 w-full overflow-hidden">
+                        <div className="flex items-center shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setEditQty(Math.max(1, parseInt(editQty) - 1).toString())}
+                            className="w-10 h-10 flex items-center justify-center rounded-l-lg border-2 border-r-0 border-[#E10600] bg-white text-[#E10600] text-lg font-bold hover:bg-red-50 active:bg-red-100"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            value={editQty}
+                            onChange={(e) => setEditQty(e.target.value)}
+                            placeholder="Qty"
+                            className="w-12 h-10 px-1 text-center border-y-2 border-[#E10600] bg-white text-gray-900 text-sm focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setEditQty((parseInt(editQty) + 1).toString())}
+                            className="w-10 h-10 flex items-center justify-center rounded-r-lg border-2 border-l-0 border-[#E10600] bg-white text-[#E10600] text-lg font-bold hover:bg-red-50 active:bg-red-100"
+                          >
+                            +
+                          </button>
+                        </div>
                         <input
                           type="text"
+                          inputMode="numeric"
                           value={editPrice}
-                          onChange={(e) => setEditPrice(e.target.value)}
+                          onChange={(e) => setEditPrice(formatNumber(e.target.value))}
                           placeholder="Harga"
-                          className="flex-1 px-3 py-2 rounded-lg border-2 border-[#E10600] bg-white text-gray-900 text-sm focus:outline-none focus:border-[#E10600]"
+                          className="flex-1 min-w-0 px-3 py-2 rounded-lg border-2 border-[#E10600] bg-white text-gray-900 text-sm focus:outline-none focus:border-[#E10600]"
                         />
                       </div>
                       <div className="flex gap-2">

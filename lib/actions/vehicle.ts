@@ -41,6 +41,81 @@ export async function getVehicleByPlate(plateNumber: string): Promise<VehicleWit
   };
 }
 
+export async function getCustomerByName(name: string): Promise<Customer | null> {
+  const results = await query<Customer[]>(
+    `SELECT * FROM customers WHERE LOWER(name) = LOWER(?) LIMIT 1`,
+    [name.trim()]
+  );
+
+  if (!results || results.length === 0) return null;
+  return results[0];
+}
+
+export interface CustomerSearchResult {
+  id: string;
+  name: string;
+  phone: string | null;
+  plate_number: string | null;
+  brand: string | null;
+  model: string | null;
+  vehicle_id: string | null;
+  match_type: 'name' | 'phone' | 'plate';
+}
+
+export async function searchCustomers(searchTerm: string): Promise<CustomerSearchResult[]> {
+  if (!searchTerm.trim()) return [];
+
+  const term = searchTerm.trim();
+  const likeTerm = `%${term}%`;
+
+  // Search by name, phone, or plate number
+  const results = await query<{
+    id: string;
+    name: string;
+    phone: string | null;
+    plate_number: string | null;
+    brand: string | null;
+    model: string | null;
+    vehicle_id: string | null;
+  }[]>(
+    `SELECT DISTINCT 
+      c.id,
+      c.name,
+      c.phone,
+      v.plate_number,
+      v.brand,
+      v.model,
+      v.id as vehicle_id
+     FROM customers c
+     LEFT JOIN vehicles v ON c.id = v.customer_id
+     WHERE LOWER(c.name) LIKE LOWER(?)
+        OR LOWER(c.phone) LIKE LOWER(?)
+        OR LOWER(v.plate_number) LIKE LOWER(?)
+     ORDER BY c.name ASC
+     LIMIT 10`,
+    [likeTerm, likeTerm, likeTerm]
+  );
+
+  if (!results) return [];
+
+  // Determine match type for each result
+  return results.map(r => {
+    let match_type: 'name' | 'phone' | 'plate' = 'name';
+    const lowerTerm = term.toLowerCase();
+
+    if (r.plate_number && r.plate_number.toLowerCase().includes(lowerTerm)) {
+      match_type = 'plate';
+    } else if (r.phone && r.phone.toLowerCase().includes(lowerTerm)) {
+      match_type = 'phone';
+    }
+
+    return {
+      ...r,
+      match_type
+    };
+  });
+}
+
 export async function createCustomerAndVehicle(data: {
   customerName: string;
   customerPhone?: string;
@@ -129,15 +204,17 @@ export async function getAllVehicles(): Promise<(VehicleWithCustomer & { has_unp
     customer_phone: string | null;
     customer_address: string | null;
     unpaid_count: number;
+    latest_transaction: string | null;
   })[]>(
     `SELECT v.*, 
             c.name as customer_name, 
             c.phone as customer_phone, 
             c.address as customer_address,
-            (SELECT COUNT(*) FROM transactions t WHERE t.vehicle_id = v.id AND t.status != 'paid') as unpaid_count
+            (SELECT COUNT(*) FROM transactions t WHERE t.vehicle_id = v.id AND t.status != 'paid') as unpaid_count,
+            (SELECT MAX(t.transaction_date) FROM transactions t WHERE t.vehicle_id = v.id) as latest_transaction
      FROM vehicles v
      JOIN customers c ON v.customer_id = c.id
-     ORDER BY v.plate_number ASC`
+     ORDER BY latest_transaction DESC, v.created_at DESC`
   );
 
   return results.map(r => ({

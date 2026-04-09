@@ -184,6 +184,7 @@ export async function getUnpaidVehicles(): Promise<UnpaidVehicle[]> {
      JOIN customers c ON v.customer_id = c.id
      LEFT JOIN transaction_items ti ON t.id = ti.transaction_id
      WHERE t.status != 'paid'
+       AND v.plate_number NOT REGEXP '^GM-[0-9]+$'
      GROUP BY t.id, v.plate_number, v.brand, v.model, c.name, t.transaction_date, t.status
      ORDER BY t.transaction_date DESC`
   );
@@ -361,6 +362,17 @@ export async function createTransactionWithNewVehicle(
   const customerId = uuidv4();
   const vehicleId = uuidv4();
 
+  // Use provided plate number or generate ID-XXX for service
+  let finalPlateNumber = plateNumber;
+  if (!plateNumber.trim()) {
+    // Generate ID-XXX for service without plate
+    const [countResult] = await query<{ count: number }[]>(
+      `SELECT COUNT(*) as count FROM vehicles WHERE plate_number REGEXP '^ID-[0-9]+$'`
+    );
+    const nextNumber = (countResult?.count || 0) + 1;
+    finalPlateNumber = `ID-${nextNumber.toString().padStart(3, '0')}`;
+  }
+
   await query(
     `INSERT INTO customers (id, name) VALUES (?, ?)`,
     [customerId, 'Pelanggan Baru']
@@ -368,7 +380,7 @@ export async function createTransactionWithNewVehicle(
 
   await query(
     `INSERT INTO vehicles (id, customer_id, plate_number) VALUES (?, ?, ?)`,
-    [vehicleId, customerId, plateNumber]
+    [vehicleId, customerId, finalPlateNumber]
   );
 
   return createTransaction(vehicleId, items, notes);
@@ -472,6 +484,57 @@ export async function deletePayment(paymentId: string, transactionId: string): P
   revalidatePath('/history');
 }
 
+export async function getServiceTransactions(): Promise<SaleTransaction[]> {
+  const transactions = await query<{
+    id: string;
+    transaction_date: string;
+    status: 'unpaid' | 'dp' | 'paid';
+    notes: string | null;
+    customer_name: string;
+  }[]>(
+    `SELECT 
+      t.id,
+      t.transaction_date,
+      t.status,
+      t.notes,
+      c.name as customer_name
+     FROM transactions t
+     JOIN vehicles v ON t.vehicle_id = v.id
+     JOIN customers c ON v.customer_id = c.id
+     WHERE v.plate_number NOT REGEXP '^GM-[0-9]+$'
+     ORDER BY t.transaction_date DESC, t.created_at DESC`
+  );
+
+  const results: SaleTransaction[] = [];
+  for (const t of transactions) {
+    const items = await query<TransactionItem[]>(
+      `SELECT * FROM transaction_items WHERE transaction_id = ?`,
+      [t.id]
+    );
+
+    const payments = await query<Payment[]>(
+      `SELECT * FROM payments WHERE transaction_id = ?`,
+      [t.id]
+    );
+
+    const total = items.reduce((sum, i) => sum + Number(i.total_price), 0);
+    const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+    results.push({
+      id: t.id,
+      transaction_date: t.transaction_date,
+      status: t.status,
+      notes: t.notes,
+      customer_name: t.customer_name,
+      items,
+      total,
+      total_paid: totalPaid
+    });
+  }
+
+  return results;
+}
+
 export async function getSaleTransactions(): Promise<SaleTransaction[]> {
   const transactions = await query<{
     id: string;
@@ -489,7 +552,7 @@ export async function getSaleTransactions(): Promise<SaleTransaction[]> {
      FROM transactions t
      JOIN vehicles v ON t.vehicle_id = v.id
      JOIN customers c ON v.customer_id = c.id
-     WHERE v.plate_number LIKE 'GM-%'
+     WHERE v.plate_number REGEXP '^GM-[0-9]+$'
      ORDER BY t.transaction_date DESC, t.created_at DESC`
   );
 

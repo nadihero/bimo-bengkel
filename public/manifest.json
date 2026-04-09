@@ -9,7 +9,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icons/icon-2.svg",
+      "src": "/icons/gm.ico",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
