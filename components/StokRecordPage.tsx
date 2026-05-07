@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import BottomNav from '@/components/BottomNav';
 import { createSpeechRecognition, isWebSpeechSupported, ISpeechRecognition, SpeechRecognitionEvent } from '@/lib/voice-parser';
+import { addRestockItem, toggleRestockItemBought, deleteRestockItem } from '@/lib/actions/stock';
 
 export interface OutOfStockItem {
   id: string;
@@ -18,6 +19,11 @@ interface StokRecordPageProps {
 export default function StokRecordPage({ initialItems }: StokRecordPageProps) {
   const [items, setItems] = useState<OutOfStockItem[]>(initialItems);
   const [newItemName, setNewItemName] = useState('');
+
+  // Sync state with server
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
 
   // Voice state
   const [isListening, setIsListening] = useState(false);
@@ -71,31 +77,27 @@ export default function StokRecordPage({ initialItems }: StokRecordPageProps) {
     }
   }, [recognition]);
 
-  const handleAddItem = (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
     
-    // Catatan: Ini sementara hanya state UI. Nanti dihubungkan ke Server Action/Database.
-    const newItem: OutOfStockItem = {
-      id: Date.now().toString(),
-      name: newItemName,
-      created_at: new Date().toISOString(),
-      is_bought: false
-    };
-    
-    setItems([newItem, ...items]);
+    const name = newItemName;
     setNewItemName('');
+    
+    await addRestockItem(name);
   };
 
-  const toggleBought = (id: string) => {
+  const toggleBought = async (id: string, currentStatus: boolean) => {
     setItems(items.map(item => 
-      item.id === id ? { ...item, is_bought: !item.is_bought } : item
+      item.id === id ? { ...item, is_bought: !currentStatus } : item
     ));
+    await toggleRestockItemBought(id, currentStatus);
   };
 
-  const deleteItem = (id: string) => {
+  const deleteItem = async (id: string) => {
     if (confirm('Hapus catatan ini?')) {
       setItems(items.filter(item => item.id !== id));
+      await deleteRestockItem(id);
     }
   };
 
@@ -180,7 +182,7 @@ export default function StokRecordPage({ initialItems }: StokRecordPageProps) {
                   <div key={item.id} className="bg-white rounded-2xl border border-gray-300 p-4 flex items-center justify-between hover:shadow-lg hover:shadow-gray-200/50 hover:scale-[1.02] hover:border-gray-200 transition-all group">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <button 
-                        onClick={() => toggleBought(item.id)}
+                        onClick={() => toggleBought(item.id, item.is_bought)}
                         className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-green-500 hover:bg-green-50 transition-all flex-shrink-0"
                       >
                       </button>
@@ -216,7 +218,7 @@ export default function StokRecordPage({ initialItems }: StokRecordPageProps) {
                   <div key={item.id} className="bg-gray-50 rounded-2xl border border-gray-200 p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <button 
-                        onClick={() => toggleBought(item.id)}
+                        onClick={() => toggleBought(item.id, item.is_bought)}
                         className="w-7 h-7 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center flex-shrink-0 text-white"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
