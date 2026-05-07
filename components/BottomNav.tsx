@@ -20,10 +20,11 @@ const menuItems = [
     icon: '/menu-img/Riwayat.svg',
   },
   {
-    label: 'Laporan',
-    href: '/laporan',
+    label: 'Stok',
+    href: '/stok',
     icon: '/menu-img/Laporan.svg',
   },
+
 ];
 
 export default function BottomNav() {
