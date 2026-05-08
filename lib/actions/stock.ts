@@ -31,7 +31,7 @@ export async function addRestockItem(name: string) {
   try {
     await query(
       'INSERT INTO out_of_stock_items (name, is_bought) VALUES (?, ?)',
-      [name, false]
+      [name, 0]
     );
     revalidatePath('/stok');
     return { success: true };
@@ -45,7 +45,7 @@ export async function toggleRestockItemBought(id: string, currentStatus: boolean
   try {
     await query(
       'UPDATE out_of_stock_items SET is_bought = ? WHERE id = ?',
-      [!currentStatus, id]
+      [!currentStatus ? 1 : 0, id]
     );
     revalidatePath('/stok');
     return { success: true };
