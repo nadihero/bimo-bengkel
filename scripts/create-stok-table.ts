@@ -2,7 +2,7 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 async function main() {
-  const { default: pool } = await import('../lib/db.ts');
+  const { default: pool } = await import('../lib/db');
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS out_of_stock_items (
